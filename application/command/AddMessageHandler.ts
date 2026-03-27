@@ -5,13 +5,14 @@ export class AddMessageHandler {
 
     constructor() {
         this._groq = new Groq({
-            apiKey: "",
+            apiKey: process.env.GROQ_API_KEY,
         });
     }
 
     async handle(command: AddMessageCommand): Promise<AddMessageResponse> {
         const instruction: any[] = []
         const history: any[] = []
+
         const conversation = [
             ...instruction,
             ...history,
