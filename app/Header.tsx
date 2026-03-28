@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SignInButton, SignOutButton, UserButton, useUser } from "@clerk/nextjs";
 
 const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => {
   const pathname = usePathname();
@@ -22,6 +23,7 @@ const NavLink = ({ href, children }: { href: string; children: React.ReactNode }
 };
 
 export function Header() {
+  const { user } = useUser();
 
   return (
     <header className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md shrink-0 z-20 w-full">
@@ -33,6 +35,19 @@ export function Header() {
           <NavLink href="/">Chat</NavLink>
           <NavLink href="/students">Estudiantes</NavLink>
         </nav>
+      </div>
+      <div className="flex items-center gap-3">
+        {user ? (
+          <>
+            <span className="text-xs text-zinc-600 dark:text-zinc-300">{user.firstName ?? "Usuario"}</span>
+            <UserButton />
+            <SignOutButton />
+          </>
+        ) : (
+          <SignInButton>
+            <button className="px-3 py-1 text-xs font-medium rounded-md border border-zinc-300 dark:border-zinc-700">Iniciar sesión</button>
+          </SignInButton>
+        )}
       </div>
     </header>
   );

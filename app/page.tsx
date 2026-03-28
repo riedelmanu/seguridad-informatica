@@ -1,21 +1,28 @@
 "use client";
 
+import Link from "next/link";
 import { useConversation } from '@/app/hooks/useConversation'
 import { useState, useRef, useEffect, FormEvent } from "react"
 import { useConversationStore, UserRole, Message } from '@/app/store/conversation'
+import { useUser } from "@clerk/nextjs"
+import { AuthPrompt } from "@/app/components/AuthPrompt"
 
 export default function Home() {
-  const { conversation, clearConversation } = useConversationStore() as any
+  const { user } = useUser();
+  const { conversation, clearConversation } = useConversationStore()
   const [inputValue, setInputValue] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { addMessageConversation } = useConversation()
 
   // Auto-scroll al final cuando hay nuevos mensajes
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [conversation, isLoading])
 
-  const { addMessageConversation } = useConversation()
+  if (!user) {
+    return <AuthPrompt title="Inicia sesión para continuar" message="Por favor, inicia sesión para acceder al chat de Campus IA." />
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()

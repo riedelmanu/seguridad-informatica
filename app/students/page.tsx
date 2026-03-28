@@ -1,13 +1,39 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useStudents } from "@/app/hooks/useStudents"
 import { useStudentsStore, Student } from "@/app/store/students"
+import { useUser } from "@clerk/nextjs"
+import { AuthPrompt } from "@/app/components/AuthPrompt"
 
 export default function StudentsPage() {
+  const { user } = useUser();
   const { fetchStudents } = useStudents()
   const { students } = useStudentsStore()
   const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    if (!user) {
+      return
+    }
+
+    const loadStudents = async () => {
+      try {
+        await fetchStudents()
+      } catch (error) {
+        console.error("Error fetching students:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadStudents()
+  }, [user, fetchStudents])
+
+  if (!user) {
+    return <AuthPrompt title="Inicia sesión para continuar" message="Debes ingresar con tu cuenta para ver los estudiantes." />
+  }
 
   useEffect(() => {
     const loadStudents = async () => {
@@ -19,8 +45,9 @@ export default function StudentsPage() {
         setIsLoading(false)
       }
     }
+
     loadStudents()
-  }, [])
+  }, [fetchStudents])
 
   return (
     <main className="flex flex-col flex-1 items-center bg-zinc-50 font-sans dark:bg-zinc-950 h-full w-full overflow-hidden">
