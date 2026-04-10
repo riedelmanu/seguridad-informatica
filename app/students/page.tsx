@@ -1,20 +1,27 @@
 "use client"
 
-import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useStudents } from "@/app/hooks/useStudents"
 import { useStudentsStore, Student } from "@/app/store/students"
 import { useUser } from "@clerk/nextjs"
 import { AuthPrompt } from "@/app/components/AuthPrompt"
 
+interface UserMetadata {
+  role?: string;
+}
+
 export default function StudentsPage() {
-  const { user } = useUser();
+  const { isLoaded, user } = useUser(); // isLoaded ayuda a evitar parpadeos
   const { fetchStudents } = useStudents()
   const { students } = useStudentsStore()
   const [isLoading, setIsLoading] = useState(true)
 
+  const metadata = user?.publicMetadata as UserMetadata;
+  const userRole = metadata?.role?.toLowerCase() || "";
+
+  // Sólo carga si el usuario está logueado o
   useEffect(() => {
-    if (!user) {
+    if (!isLoaded || !user || userRole !== 'docente') {
       return
     }
 
@@ -29,25 +36,25 @@ export default function StudentsPage() {
     }
 
     loadStudents()
-  }, [user, fetchStudents])
+  }, [isLoaded,user, userRole, fetchStudents])
 
+  // Si Clerk aún está cargando la sesión
+  if (!isLoaded) return null;
+
+  // Si no está logueado
   if (!user) {
     return <AuthPrompt title="Inicia sesión para continuar" message="Debes ingresar con tu cuenta para ver los estudiantes." />
   }
 
-  useEffect(() => {
-    const loadStudents = async () => {
-      try {
-        await fetchStudents()
-      } catch (error) {
-        console.error("Error fetching students:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadStudents()
-  }, [fetchStudents])
+  // Si está logueado pero no es docente
+  if (userRole !== 'docente') {
+    return (
+      <AuthPrompt 
+        title="Acceso Restringido" 
+        message="Necesitas ser Docente para visualizar este directorio." 
+      />
+    )
+  }
 
   return (
     <main className="flex flex-col flex-1 items-center bg-zinc-50 font-sans dark:bg-zinc-950 h-full w-full overflow-hidden">
