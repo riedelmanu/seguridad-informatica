@@ -47,3 +47,30 @@ Si vas a modificar el código, estos son los archivos y carpetas más importante
 - 🪝 `app/hooks/useConversation.ts`: Contiene la lógica que conecta la interfaz gráfica (frontend) con la ruta de la API (backend).
 
 > **Tip para el equipo:** Si necesitan modificar cómo se ven los mensajes, revisen `app/page.tsx`. Si necesitan cambiar qué responde la IA, revisen `app/api/chat/route.ts`.
+
+
+
+## Fase 1: Hardening de API y Entorno
+En esta primera etapa, el objetivo principal fue mitigar las vulnerabilidades críticas del esqueleto inicial, asegurando que las API Keys estén protegidas y que el acceso al sistema esté restringido únicamente a usuarios autorizados.
+
+## Medidas de Seguridad Implementadas
+
+- Migración de Secretos: Se eliminaron las credenciales del código fuente y se migraron a variables de entorno (.env.local), asegurando que la API Key de la IA (Groq) nunca viaje al frontend ni quede expuesta en el repositorio.
+
+Archivos clave: .env.local, .gitignore y application/command/AddMessageHandler.ts.
+
+- Autenticación OIDC: Se integró Clerk como proveedor de identidad, utilizando el estándar OpenID Connect (OIDC) para validar de forma confiable quién es el usuario mediante un ID Token (JWT).
+
+Archivos clave: app/layout.tsx y app/Header.tsx.
+
+- Autorización OAuth 2.0: Se implementaron flujos de autorización para delegar el acceso a proveedores externos (Google), garantizando que la aplicación reciba tokens de acceso seguros sin almacenar contraseñas locales.
+
+Archivos clave: middleware.ts y la consola de configuración de Clerk.
+
+- Protección de Rutas (Middleware): Se configuró un Middleware de seguridad en Next.js que intercepta cada petición; si el usuario no posee una sesión válida, el sistema deniega el acceso al Chat y a la lista de estudiantes.
+
+Archivos clave: middleware.ts, app/page.tsx y app/students/page.tsx.
+
+- Blindaje de la API: Las rutas de backend (/api/chat y /api/students) fueron reforzadas con validaciones de servidor que responden con un estado 401 Unauthorized si no detectan un userId autenticado.
+
+Archivos clave: app/api/chat/route.ts y app/api/students/list/route.ts.
