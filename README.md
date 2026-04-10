@@ -1,4 +1,4 @@
-# Secure Campus IA 🎓🤖
+# Secure Campus IA 🎓
 
 Bienvenido al repositorio de **Secure Campus IA**. Este proyecto es una aplicación web moderna desarrollada con Next.js que implementa una interfaz de chat con Inteligencia Artificial.
 
