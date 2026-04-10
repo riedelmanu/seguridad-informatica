@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { GetStudentsListHandler, GetStudentsListQuery } from '@/application/query/GetStudentsListHandler'
  
-const getStudentsListQueryHandler = async (request: NextRequest): Promise<NextResponse> => {
+
+export const GET = async (request: NextRequest): Promise<NextResponse> => {
     const { userId } = await auth()
- 
+
     if (!userId) {
         return NextResponse.json(
             { error: "No autorizado. Debe iniciar sesión para acceder a este recurso." },
@@ -13,12 +14,12 @@ const getStudentsListQueryHandler = async (request: NextRequest): Promise<NextRe
     }
 
     const user = await currentUser()
-    const userRole = user?.publicMetadata?.role as string
+    const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string;
 
-    if (userRole !== 'docente' && userRole !== 'admin') {
+    if (userRole?.toLowerCase() !== 'docente' && userRole?.toLowerCase() !== 'admin') {
         return NextResponse.json(
-            { error: "Acceso denegado. Se requieren permisos de Docente para ver este directorio." },
-            { status: 403 } // HTTP 403: Forbidden
+            { error: "Acceso denegado. Rol insuficiente." },
+            { status: 403 }
         )
     }
  
@@ -37,5 +38,3 @@ const getStudentsListQueryHandler = async (request: NextRequest): Promise<NextRe
         )
     }
 }
- 
-export const GET = getStudentsListQueryHandler
