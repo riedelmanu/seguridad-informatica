@@ -1,21 +1,26 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useStudents } from "@/app/hooks/useStudents"
 import { useStudentsStore, Student } from "@/app/store/students"
 import { useUser } from "@clerk/nextjs"
 import { AuthPrompt } from "@/app/components/AuthPrompt"
+import { usePermissions } from "@/app/hooks/usePermissions"
 
 export default function StudentsPage() {
-  const { isLoaded, user } = useUser(); 
+  const { user, isLoaded: isUserLoaded } = useUser();
   const { fetchStudents } = useStudents()
   const { students } = useStudentsStore()
   const [isLoading, setIsLoading] = useState(true)
+  const { hasPermission, isLoaded: permissionsLoaded } = usePermissions();
 
-  // Sólo carga si el usuario está logueado y es docente
   useEffect(() => {
-    if (!isLoaded || !user || user.publicMetadata?.role !== 'docente') {
-      return
+    if (!isUserLoaded || !permissionsLoaded) return;
+    
+    if (!user || !hasPermission("read:students")) {
+      setIsLoading(false);
+      return;
     }
 
     const loadStudents = async () => {
@@ -29,24 +34,26 @@ export default function StudentsPage() {
     }
 
     loadStudents()
-  }, [isLoaded,user, fetchStudents])
+  }, [user, isUserLoaded, permissionsLoaded, hasPermission, fetchStudents])
 
-  // Si Clerk aún está cargando la sesión
-  if (!isLoaded) return null;
+  if (!isUserLoaded || !permissionsLoaded) {
+    // Show nothing while loading auth state to avoid flashing
+    return null;
+  }
 
-  // Si no está logueado
   if (!user) {
     return <AuthPrompt title="Inicia sesión para continuar" message="Debes ingresar con tu cuenta para ver los estudiantes." />
   }
 
-  // Si está logueado pero no es docente
-  if (user.publicMetadata?.role !== 'docente') {
+  if (!hasPermission("read:students")) {
     return (
-      <AuthPrompt 
-        title="Acceso Restringido" 
-        message="Necesitas ser docente para visualizar este directorio." 
-      />
-    )
+      <main className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-zinc-950 h-full w-full">
+        <div className="flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-zinc-900 shadow-sm border border-zinc-200 dark:border-zinc-800 rounded-lg">
+          <h2 className="text-xl font-bold text-red-600 mb-2">Acceso Denegado</h2>
+          <p className="text-zinc-600 dark:text-zinc-400">No tienes los permisos necesarios para ver esta página.</p>
+        </div>
+      </main>
+    );
   }
 
   return (

@@ -5,7 +5,7 @@ import { useConversation } from '@/app/hooks/useConversation'
 import { useState, useRef, useEffect, FormEvent } from "react"
 import { useConversationStore, UserRole, Message } from '@/app/store/conversation'
 import { useUser } from "@clerk/nextjs"
-import { AuthPrompt } from "@/app/components/AuthPrompt"
+import { LandingPage } from "@/app/components/LandingPage"
 
 export default function Home() {
   const { user } = useUser();
@@ -21,7 +21,7 @@ export default function Home() {
   }, [conversation, isLoading])
 
   if (!user) {
-    return <AuthPrompt title="Inicia sesión para continuar" message="Por favor, inicia sesión para acceder al chat de Campus IA." />
+    return <LandingPage />;
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -41,7 +41,7 @@ export default function Home() {
   };
 
   return (
-    <main className="flex flex-col flex-1 items-center bg-zinc-50 font-sans dark:bg-zinc-950 h-full w-full overflow-hidden">
+    <main className="flex flex-col items-center bg-zinc-50 font-sans dark:bg-zinc-950 w-full overflow-hidden" style={{ height: 'calc(100dvh - 53px)' }}>
       <div className="flex flex-col w-full max-w-3xl flex-1 bg-white dark:bg-zinc-900/50 shadow-sm border-x border-zinc-200 dark:border-zinc-800 overflow-hidden relative">
         {/* Toolbar de Chat */}
         {conversation.length > 0 && (

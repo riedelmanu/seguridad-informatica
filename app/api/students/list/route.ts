@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { GetStudentsListHandler, GetStudentsListQuery } from '@/application/query/GetStudentsListHandler'
+import { checkServerPermission } from '@/app/lib/auth'
 
 export const GET = async (request: NextRequest): Promise<NextResponse> => {
     const { userId } = await auth()
@@ -23,6 +24,14 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
     }
  
     try {
+        const hasPermission = await checkServerPermission("read:students");
+        if (!hasPermission) {
+            return NextResponse.json(
+                { error: "No tienes permisos para acceder a esta información." },
+                { status: 403 }
+            );
+        }
+
         const handler = new GetStudentsListHandler()
         
         const query: GetStudentsListQuery = {}

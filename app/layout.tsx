@@ -15,7 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Secure Campus IA",
+  title: "Secure Campus IA — Asistente Académico con IA",
+  description: "Plataforma universitaria de IA segura para estudiantes y docentes. Chat inteligente, gestión de alumnos y respuestas instantáneas.",
 };
 
 export default function RootLayout({
@@ -26,9 +27,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-[100dvh] antialiased overflow-hidden`}
+      className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
-      <body className="h-full flex flex-col overflow-hidden">
+      <body className="flex flex-col min-h-screen">
         <ClerkProvider>
           <Header />
           {children}

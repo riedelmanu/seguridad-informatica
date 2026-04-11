@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignInButton, SignOutButton, UserButton, useUser } from "@clerk/nextjs";
+import { usePermissions } from "@/app/hooks/usePermissions";
 
 const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => {
   const pathname = usePathname();
@@ -24,6 +25,7 @@ const NavLink = ({ href, children }: { href: string; children: React.ReactNode }
 
 export function Header() {
   const { user } = useUser();
+  const { hasPermission } = usePermissions();
 
   return (
     <header className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md shrink-0 z-20 w-full">
@@ -31,10 +33,12 @@ export function Header() {
         <h1 className="text-sm font-semibold tracking-wide text-zinc-800 dark:text-zinc-200 uppercase">
           Secure Campus IA
         </h1>
-        <nav className="flex items-center gap-2">
-          <NavLink href="/">Chat</NavLink>
-          <NavLink href="/students">Estudiantes</NavLink>
-        </nav>
+        {user && (
+          <nav className="flex items-center gap-2">
+            <NavLink href="/">Chat</NavLink>
+            {hasPermission("read:students") && <NavLink href="/students">Estudiantes</NavLink>}
+          </nav>
+        )}
       </div>
       <div className="flex items-center gap-3">
         {user ? (
