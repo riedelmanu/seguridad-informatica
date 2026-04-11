@@ -6,22 +6,15 @@ import { useStudentsStore, Student } from "@/app/store/students"
 import { useUser } from "@clerk/nextjs"
 import { AuthPrompt } from "@/app/components/AuthPrompt"
 
-interface UserMetadata {
-  role?: string;
-}
-
 export default function StudentsPage() {
-  const { isLoaded, user } = useUser(); // isLoaded ayuda a evitar parpadeos
+  const { isLoaded, user } = useUser(); 
   const { fetchStudents } = useStudents()
   const { students } = useStudentsStore()
   const [isLoading, setIsLoading] = useState(true)
 
-  const metadata = user?.publicMetadata as UserMetadata;
-  const userRole = metadata?.role?.toLowerCase() || "";
-
-  // Sólo carga si el usuario está logueado o
+  // Sólo carga si el usuario está logueado y es docente
   useEffect(() => {
-    if (!isLoaded || !user || userRole !== 'docente') {
+    if (!isLoaded || !user || user.publicMetadata?.role !== 'docente') {
       return
     }
 
@@ -36,7 +29,7 @@ export default function StudentsPage() {
     }
 
     loadStudents()
-  }, [isLoaded,user, userRole, fetchStudents])
+  }, [isLoaded,user, fetchStudents])
 
   // Si Clerk aún está cargando la sesión
   if (!isLoaded) return null;
@@ -47,11 +40,11 @@ export default function StudentsPage() {
   }
 
   // Si está logueado pero no es docente
-  if (userRole !== 'docente') {
+  if (user.publicMetadata?.role !== 'docente') {
     return (
       <AuthPrompt 
         title="Acceso Restringido" 
-        message="Necesitas ser Docente para visualizar este directorio." 
+        message="Necesitas ser docente para visualizar este directorio." 
       />
     )
   }

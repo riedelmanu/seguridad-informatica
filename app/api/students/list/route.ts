@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { GetStudentsListHandler, GetStudentsListQuery } from '@/application/query/GetStudentsListHandler'
- 
 
 export const GET = async (request: NextRequest): Promise<NextResponse> => {
     const { userId } = await auth()
@@ -14,7 +13,7 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
     }
 
     const user = await currentUser()
-    const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string;
+    const userRole = (user?.publicMetadata?.role) as string;
 
     if (userRole?.toLowerCase() !== 'docente' && userRole?.toLowerCase() !== 'admin') {
         return NextResponse.json(
