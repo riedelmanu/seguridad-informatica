@@ -23,6 +23,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -32,11 +33,9 @@ body {
 /* Root container */
 .landing-root {
   position: relative;
-  min-height: 100vh;
   background: linear-gradient(135deg, #05060d 0%, #0b0e1a 40%, #0d1020 100%);
   color: #e2e8f0;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: clip; /* clips without creating a scroll container — no inner scrollbar */
   font-family: 'Inter', 'Geist', Arial, sans-serif;
 }
 
