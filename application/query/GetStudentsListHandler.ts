@@ -30,8 +30,7 @@ export class GetStudentsListHandler {
     }
 }
 
-export interface GetStudentsListQuery {
-}
+export type GetStudentsListQuery = Record<string, never>;
 
 export interface GetStudentsListResponse {
     list: Student[]

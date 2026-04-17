@@ -57,20 +57,31 @@ En esta primera etapa, el objetivo principal fue mitigar las vulnerabilidades cr
 
 - Migración de Secretos: Se eliminaron las credenciales del código fuente y se migraron a variables de entorno (.env.local), asegurando que la API Key de la IA (Groq) nunca viaje al frontend ni quede expuesta en el repositorio.
 
-Archivos clave: .env.local, .gitignore y application/command/AddMessageHandler.ts.
+Archivos clave: .env.local, .gitignore y application/command/AddMessageHandler.ts
 
 - Autenticación OIDC: Se integró Clerk como proveedor de identidad, utilizando el estándar OpenID Connect (OIDC) para validar de forma confiable quién es el usuario mediante un ID Token (JWT).
 
-Archivos clave: app/layout.tsx y app/Header.tsx.
+Archivos clave: app/layout.tsx y app/Header.tsx
 
 - Autorización OAuth 2.0: Se implementaron flujos de autorización para delegar el acceso a proveedores externos (Google), garantizando que la aplicación reciba tokens de acceso seguros sin almacenar contraseñas locales.
 
-Archivos clave: middleware.ts y la consola de configuración de Clerk.
+Archivos clave: middleware.ts y la consola de configuración de Clerk
 
 - Protección de Rutas (Middleware): Se configuró un Middleware de seguridad en Next.js que intercepta cada petición; si el usuario no posee una sesión válida, el sistema deniega el acceso al Chat y a la lista de estudiantes.
 
-Archivos clave: middleware.ts, app/page.tsx y app/students/page.tsx.
+Archivos clave: middleware.ts, app/page.tsx y app/students/page.tsx
 
 - Blindaje de la API: Las rutas de backend (/api/chat y /api/students) fueron reforzadas con validaciones de servidor que responden con un estado 401 Unauthorized si no detectan un userId autenticado.
 
-Archivos clave: app/api/chat/route.ts y app/api/students/list/route.ts.
+Archivos clave: app/api/chat/route.ts y app/api/students/list/route.ts
+
+- Control de Acceso Basado en Roles (RBAC): Se implementó una capa de autorización granular donde el acceso al listado de estudiantes está restringido exclusivamente a usuarios con el rol docente o admin. Esta validación se realiza de forma doble: tanto en el frontend para mejorar la experiencia de usuario, como en el backend mediante la inspección de los metadatos del usuario en el servidor, devolviendo un 403 Forbidden ante intentos de acceso no autorizados.
+
+Archivos clave: app/api/students/list/route.ts y app/students/page.tsx
+
+- Evolución a Control de Acceso Basado en Permisos (PBAC) y Arquitectura Limpia:
+Se refactorizó el sistema de autorización, migrando de un modelo rígido de roles (RBAC) a un modelo granular y escalable basado en permisos específicos (ej. read:students). 
+
+Para mantener el código mantenible la lógica de validación se extrajo a un módulo centralizado. El backend interactúa de manera segura con los metadatos públicos (publicMetadata) en la base de datos de Clerk, devolviendo un 403 Forbidden absoluto ante cualquier solicitud que carezca de los privilegios exactos.
+
+Archivos clave: app/api/students/list/route.ts, app/lib/auth.ts y app/hooks/usePermissions.ts
