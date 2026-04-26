@@ -233,7 +233,7 @@ export function LandingPage() {
           {/* Stats row */}
           <div className="landing-stats">
             {[
-              { value: "Grok", label: "Motor de IA" },
+              { value: "Groq", label: "Motor de IA" },
               { value: "100%", label: "Seguro" },
               { value: "24/7", label: "Disponible" },
             ].map((s) => (
