@@ -85,3 +85,29 @@ Se refactorizó el sistema de autorización, migrando de un modelo rígido de ro
 Para mantener el código mantenible la lógica de validación se extrajo a un módulo centralizado. El backend interactúa de manera segura con los metadatos públicos (publicMetadata) en la base de datos de Clerk, devolviendo un 403 Forbidden absoluto ante cualquier solicitud que carezca de los privilegios exactos.
 
 Archivos clave: app/api/students/list/route.ts, app/lib/auth.ts y app/hooks/usePermissions.ts
+
+## Fase 2: Configuración de WAF Rules (Web Application Firewall)
+En esta fase, se implementó seguridad a nivel de red utilizando el Firewall de Vercel, diseñando reglas específicas para mitigar ataques automatizados y abuso de recursos.
+
+   1. Anti-Spam & Cost Control (Rate Limiting por IP)
+   2. Geo-Fencing (Reducción de Superficie de Ataque)
+   3. Restrict API to Frontend (Control de Origen)
+
+## Fase 3: Prevención de Prompt Injection (Auditoría de IA)
+En esta etapa, nos enfocamos en blindar la comunicación con el LLM (Groq) limitando su alcance estrictamente al ámbito académico y previniendo ataques de manipulación.
+
+- Validación de Entrada Estricta: Se implementó una capa de validación en el servidor que rechaza mensajes vacíos o excesivamente largos, previniendo ataques de desbordamiento en el prompt.
+
+- Patrón Dual-LLM (Prompt Guardian): Se integró un modelo secundario que actúa como escudo previo. Evalúa la intención del usuario y bloquea la solicitud si detecta intentos de extracción de directivas o cambio de rol.
+
+- Aislamiento de Contexto: Se emplea criptografía nativa crypto para generar delimitadores aleatorios en cada petición. Las instrucciones del usuario se encapsulan, instruyendo al LLM a tratar ese contenido estrictamente como *datos*.
+
+- Sanitización de Salida: Un filtro final intercepta la respuesta de la IA. Si intenta imprimir secretos o delimitadores internos, el sistema censura el mensaje.
+
+
+## Hardening del Repositorio
+Adicionalmente, implementamos medidas de seguridad:
+
+- Análisis Estático (SAST) con CodeQL: Se integró mediante GitHub Actions para escanear automáticamente cada Pull Request en busca de vulnerabilidades estructurales.
+- Branch Protection: Se bloqueó el Push directo a main. Todo código requiere un PR, aprobación de dos integrantes y superar el análisis de CodeQL.
+- Security Policy: Se añadió un SECURITY.md definiendo versiones soportadas y protocolos de reporte de vulnerabilidades.
