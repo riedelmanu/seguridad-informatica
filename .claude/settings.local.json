@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python scripts/office/unpack.py \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_v3.0_Juanesycia .docx\" \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_unpacked\")",
+      "Bash(cd \"C:\\\\Users\\\\jichiappella\\\\AppData\\\\Roaming\\\\Claude\\\\local-agent-mode-sessions\\\\skills-plugin\\\\49b62b44-00b9-4a8d-bd95-6b68ddd24a49\\\\f951b980-6dd2-45ba-9a48-7220a676bf9c\\\\skills\\\\docx\" && python scripts/office/unpack.py \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_v3.0_Juanesycia .docx\" \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_unpacked\")",
+      "Bash(pip install *)",
+      "Bash(extract-text \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_v3.0_Juanesycia .docx\")",
+      "Bash(pandoc \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_v3.0_Juanesycia .docx\" -o - --to markdown)",
+      "Bash(python scripts/office/pack.py \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_unpacked\" \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_v3.1_Juanesycia.docx\" --original \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_v3.0_Juanesycia .docx\")",
+      "Bash(python scripts/office/pack.py \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_unpacked\" \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_v3.1_Juanesycia.docx\" --original \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_v3.0_Juanesycia .docx\" --validate false)",
+      "Bash(python -c ' *)",
+      "Bash(git cherry-pick *)"
+    ]
+  }
+}
