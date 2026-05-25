@@ -7,8 +7,8 @@ export class GetStudentsListHandler {
         this.repository = repository ?? new StudentRepository()
     }
 
-    async handle(_query: GetStudentsListQuery): Promise<GetStudentsListResponse> {
-        const students = await this.repository.findAll()
+    async handle(_query: GetStudentsListQuery, user: { email: string; role: string }): Promise<GetStudentsListResponse> {
+        const students = await this.repository.findAll(user)
         return { list: students }
     }
 }
@@ -24,4 +24,5 @@ export interface Student {
     name: string
     email: string
     active: boolean
+    detail: string | null
 }
