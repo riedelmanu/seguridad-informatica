@@ -37,6 +37,7 @@ export function Header() {
           <nav className="flex items-center gap-2">
             <NavLink href="/">Chat</NavLink>
             {hasPermission("read:students") && <NavLink href="/students">Estudiantes</NavLink>}
+            {hasPermission("read:audit_logs") && <NavLink href="/audit">Audit Log</NavLink>}
           </nav>
         )}
       </div>
