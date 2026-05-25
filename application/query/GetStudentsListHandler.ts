@@ -3,8 +3,8 @@ import { StudentRepository } from '@/infraestructure/repositories/StudentReposit
 export class GetStudentsListHandler {
     private readonly repository: StudentRepository
 
-    constructor() {
-        this.repository = new StudentRepository()
+    constructor(repository?: StudentRepository) {
+        this.repository = repository ?? new StudentRepository()
     }
 
     async handle(_query: GetStudentsListQuery): Promise<GetStudentsListResponse> {
@@ -13,7 +13,7 @@ export class GetStudentsListHandler {
     }
 }
 
-export type GetStudentsListQuery = Record<string, never>;
+export type GetStudentsListQuery = Record<string, never>
 
 export interface GetStudentsListResponse {
     list: Student[]
