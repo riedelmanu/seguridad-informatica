@@ -9,7 +9,22 @@
       "Bash(python scripts/office/pack.py \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_unpacked\" \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_v3.1_Juanesycia.docx\" --original \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_v3.0_Juanesycia .docx\")",
       "Bash(python scripts/office/pack.py \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_unpacked\" \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_v3.1_Juanesycia.docx\" --original \"C:\\\\Users\\\\jichiappella\\\\Downloads\\\\TPI_v3.0_Juanesycia .docx\" --validate false)",
       "Bash(python -c ' *)",
-      "Bash(git cherry-pick *)"
+      "Bash(git cherry-pick *)",
+      "Bash(git merge *)",
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git rm *)",
+      "Bash(git commit *)",
+      "Bash(npx vercel *)",
+      "WebFetch(domain:gitlab.com)",
+      "Bash(Get-ChildItem *)",
+      "Bash(npm run *)",
+      "Bash(npx tsc *)",
+      "Bash(npx supabase *)",
+      "Bash(curl -s \"https://api.clerk.com/v1/users?limit=10\" -H \"Authorization: Bearer sk_test_7EPJ5Uz4XJUSnlvhc5x2bW3FyEZ6bDYDxcad7h0mmv\")",
+      "Bash(python -c \"import sys,json; users=json.load\\(sys.stdin\\)['data']; [print\\(u['id'], u['email_addresses'][0]['email_address'], u.get\\('public_metadata',{}\\)\\) for u in users]\")",
+      "Bash(python -c \"import sys,json; data=json.load\\(sys.stdin\\); print\\(json.dumps\\(data, indent=2\\)\\)\")",
+      "Bash(python *)"
     ]
   }
 }
