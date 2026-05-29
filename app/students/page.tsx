@@ -118,9 +118,49 @@ export default function StudentsPage() {
   const [dniCountdowns, setDniCountdowns] = useState<Record<number, number>>({})
   const timersRef = useRef<Record<number, ReturnType<typeof setInterval>>>({})
 
-  const { searchStudents, getStudentsList } = useStudentApi()
+  const [revealedDetails, setRevealedDetails] = useState<Record<number, string | null>>({})
+  const [loadingDetail, setLoadingDetail] = useState<Record<number, boolean>>({})
+  const [editingStudentId, setEditingStudentId] = useState<number | null>(null)
+  const [editDetailValue, setEditDetailValue] = useState<string>("")
+  const [isSavingDetail, setIsSavingDetail] = useState<boolean>(false)
+
+  const { searchStudents, getStudentsList, getStudentDetail, updateStudentDetail } = useStudentApi()
   const [searchTerm, setSearchTerm] = useState("")
   const [isSearching, setIsSearching] = useState(false)
+
+  const handleRevealDetail = async (studentId: number) => {
+    if (revealedDetails[studentId] !== undefined) {
+      setRevealedDetails(prev => { const next = { ...prev }; delete next[studentId]; return next })
+      if (editingStudentId === studentId) {
+        setEditingStudentId(null)
+      }
+      return
+    }
+    setLoadingDetail(prev => ({ ...prev, [studentId]: true }))
+    try {
+      const res = await getStudentDetail(studentId)
+      setRevealedDetails(prev => ({ ...prev, [studentId]: res.detail }))
+    } catch (err) {
+      console.error("Error fetching student detail:", err)
+    } finally {
+      setLoadingDetail(prev => ({ ...prev, [studentId]: false }))
+    }
+  }
+
+  const handleSaveDetail = async (studentId: number) => {
+    setIsSavingDetail(true)
+    try {
+      await updateStudentDetail(studentId, editDetailValue)
+      setRevealedDetails(prev => ({ ...prev, [studentId]: editDetailValue }))
+      setEditingStudentId(null)
+    } catch (err: any) {
+      console.error("Error saving student detail:", err)
+      const errorMsg = err?.error || err?.message || String(err)
+      alert("Error al guardar la descripción: " + errorMsg)
+    } finally {
+      setIsSavingDetail(false)
+    }
+  }
 
   const hideDni = useCallback((studentId: number) => {
     clearInterval(timersRef.current[studentId])
@@ -220,6 +260,8 @@ export default function StudentsPage() {
   }
 
   const canSeeDni = hasPermission("read:student_dni")
+  const canSeeDetail = hasPermission("read:student_detail") || hasPermission("read:students")
+  const canEditDetail = hasPermission("write:student_detail") || hasPermission("read:student_dni")
 
   return (
     <>
@@ -295,46 +337,129 @@ export default function StudentsPage() {
                       ? dniCountdowns[student.id] <= 2 ? "rgba(239,68,68,0.04)" : "rgba(234,179,8,0.03)"
                       : undefined,
                   }}>
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-4">
-                        <div className="flex-shrink-0 h-12 w-12 rounded-full flex items-center justify-center transition-all" style={{
-                          background: revealedDnis[student.id] !== undefined
-                            ? dniCountdowns[student.id] <= 2 ? "rgba(239,68,68,0.2)" : "rgba(234,179,8,0.15)"
-                            : "rgb(228 228 231)",
-                          boxShadow: revealedDnis[student.id] !== undefined
-                            ? dniCountdowns[student.id] <= 2 ? "0 0 12px rgba(239,68,68,0.5)" : "0 0 8px rgba(234,179,8,0.4)"
-                            : undefined,
-                        }}>
-                          <span className="text-lg font-medium" style={{
-                            color: revealedDnis[student.id] !== undefined
-                              ? dniCountdowns[student.id] <= 2 ? "#ef4444" : "#eab308"
-                              : "#71717a",
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="flex-shrink-0 h-12 w-12 rounded-full flex items-center justify-center transition-all" style={{
+                            background: revealedDnis[student.id] !== undefined
+                              ? dniCountdowns[student.id] <= 2 ? "rgba(239,68,68,0.2)" : "rgba(234,179,8,0.15)"
+                              : "rgb(228 228 231)",
+                            boxShadow: revealedDnis[student.id] !== undefined
+                              ? dniCountdowns[student.id] <= 2 ? "0 0 12px rgba(239,68,68,0.5)" : "0 0 8px rgba(234,179,8,0.4)"
+                              : undefined,
                           }}>
-                            {student.name.charAt(0).toUpperCase()}
-                          </span>
+                            <span className="text-lg font-medium" style={{
+                              color: revealedDnis[student.id] !== undefined
+                                ? dniCountdowns[student.id] <= 2 ? "#ef4444" : "#eab308"
+                                : "#71717a",
+                            }}>
+                              {student.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{student.name}</p>
+                            <p className="text-sm text-zinc-500 dark:text-zinc-400">{student.email}</p>
+                            {canSeeDni && revealedDnis[student.id] !== undefined && dniCountdowns[student.id] !== undefined && (
+                              <DniDisplay value={revealedDnis[student.id]} countdown={dniCountdowns[student.id]} />
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{student.name}</p>
-                          <p className="text-sm text-zinc-500 dark:text-zinc-400">{student.email}</p>
-                          {canSeeDni && revealedDnis[student.id] !== undefined && dniCountdowns[student.id] !== undefined && (
-                            <DniDisplay value={revealedDnis[student.id]} countdown={dniCountdowns[student.id]} />
+                        {canSeeDni && (
+                          <button
+                            onClick={() => handleRevealDni(student.id)}
+                            disabled={loadingDni[student.id]}
+                            className="flex-shrink-0 text-xs px-3 py-1.5 rounded-md border transition-all disabled:opacity-50"
+                            style={revealedDnis[student.id] !== undefined ? {
+                              borderColor: dniCountdowns[student.id] <= 2 ? "#ef4444" : "#eab308",
+                              color: dniCountdowns[student.id] <= 2 ? "#ef4444" : "#eab308",
+                              background: dniCountdowns[student.id] <= 2 ? "rgba(239,68,68,0.1)" : "rgba(234,179,8,0.08)",
+                              boxShadow: dniCountdowns[student.id] <= 2 ? "0 0 8px rgba(239,68,68,0.4)" : "0 0 6px rgba(234,179,8,0.3)",
+                            } : { borderColor: "#d4d4d8", color: "#71717a" }}
+                          >
+                            {loadingDni[student.id] ? '...' : revealedDnis[student.id] !== undefined ? 'Ocultar DNI' : 'Ver DNI'}
+                          </button>
+                        )}
+                      </div>
+
+                      {canSeeDetail && (
+                        <div className="mt-2 pt-2 border-t border-dashed border-zinc-100 dark:border-zinc-800">
+                          {revealedDetails[student.id] !== undefined ? (
+                            editingStudentId === student.id ? (
+                              <div className="flex flex-col gap-2">
+                                <textarea
+                                  value={editDetailValue}
+                                  onChange={(e) => setEditDetailValue(e.target.value)}
+                                  className="w-full text-xs p-2 rounded border bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-400"
+                                  rows={3}
+                                  maxLength={500}
+                                  placeholder="Escribe una descripción sobre el alumno..."
+                                />
+                                <div className="flex gap-2 justify-end">
+                                  <button
+                                    onClick={() => setEditingStudentId(null)}
+                                    disabled={isSavingDetail}
+                                    className="text-xs px-2.5 py-1 rounded border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                                  >
+                                    Cancelar
+                                  </button>
+                                  <button
+                                    onClick={() => handleSaveDetail(student.id)}
+                                    disabled={isSavingDetail}
+                                    className="text-xs px-2.5 py-1 rounded bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 flex items-center gap-1"
+                                  >
+                                    {isSavingDetail ? 'Guardando...' : 'Guardar'}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1 bg-zinc-50 dark:bg-zinc-800/40 p-3 rounded-lg border border-zinc-200/80 dark:border-zinc-800/80">
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider font-mono">Descripción del Alumno</span>
+                                    <button
+                                      onClick={() => handleRevealDetail(student.id)}
+                                      className="text-[11px] text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
+                                    >
+                                      Ocultar
+                                    </button>
+                                  </div>
+                                  <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed font-normal">
+                                    {revealedDetails[student.id] || "Sin descripción disponible."}
+                                  </p>
+                                </div>
+                                {canEditDetail && (
+                                  <button
+                                    onClick={() => {
+                                      setEditingStudentId(student.id)
+                                      setEditDetailValue(revealedDetails[student.id] || "")
+                                    }}
+                                    className="text-xs font-semibold px-2.5 py-1 rounded border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-700 dark:text-zinc-300 mt-1"
+                                  >
+                                    Editar
+                                  </button>
+                                )}
+                              </div>
+                            )
+                          ) : (
+                            <button
+                              onClick={() => handleRevealDetail(student.id)}
+                              disabled={loadingDetail[student.id]}
+                              className="text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 flex items-center gap-1.5 transition-all"
+                            >
+                              {loadingDetail[student.id] ? (
+                                <svg className="animate-spin h-3.5 w-3.5 text-zinc-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                              ) : (
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              )}
+                              {loadingDetail[student.id] ? 'Cargando...' : 'Ver descripción'}
+                            </button>
                           )}
                         </div>
-                      </div>
-                      {canSeeDni && (
-                        <button
-                          onClick={() => handleRevealDni(student.id)}
-                          disabled={loadingDni[student.id]}
-                          className="flex-shrink-0 text-xs px-3 py-1.5 rounded-md border transition-all disabled:opacity-50"
-                          style={revealedDnis[student.id] !== undefined ? {
-                            borderColor: dniCountdowns[student.id] <= 2 ? "#ef4444" : "#eab308",
-                            color: dniCountdowns[student.id] <= 2 ? "#ef4444" : "#eab308",
-                            background: dniCountdowns[student.id] <= 2 ? "rgba(239,68,68,0.1)" : "rgba(234,179,8,0.08)",
-                            boxShadow: dniCountdowns[student.id] <= 2 ? "0 0 8px rgba(239,68,68,0.4)" : "0 0 6px rgba(234,179,8,0.3)",
-                          } : { borderColor: "#d4d4d8", color: "#71717a" }}
-                        >
-                          {loadingDni[student.id] ? '...' : revealedDnis[student.id] !== undefined ? 'Ocultar DNI' : 'Ver DNI'}
-                        </button>
                       )}
                     </div>
                   </li>

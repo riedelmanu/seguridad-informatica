@@ -17,8 +17,18 @@ export const useStudentApi = () => {
         return api.get<GetStudentsSearchResponse>(`${SEARCH_URL}?criterio=${encodeURIComponent(criterio)}`)
     }, [])
 
+    const getStudentDetail = useCallback(async (studentId: number): Promise<{ detail: string | null }> => {
+        return api.get<{ detail: string | null }>(`/api/students/${studentId}/detail`)
+    }, [])
+
+    const updateStudentDetail = useCallback(async (studentId: number, detail: string): Promise<{ success: boolean }> => {
+        return api.patch<{ success: boolean }>(`/api/students/${studentId}/detail`, { detail })
+    }, [])
+
     return {
         getStudentsList,
-        searchStudents
+        searchStudents,
+        getStudentDetail,
+        updateStudentDetail
     }
 }

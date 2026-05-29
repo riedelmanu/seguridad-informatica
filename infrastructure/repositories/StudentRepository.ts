@@ -35,28 +35,24 @@ export class StudentRepository {
 
     async updateDetail(studentId: number, plainDetail: string): Promise<void> {
         const supabase = getSupabaseClient()
-        const encryptionKey = process.env.SUPABASE_ENCRYPTION_KEY
-        if (!encryptionKey) throw new Error('Falta la variable de entorno SUPABASE_ENCRYPTION_KEY')
 
-        const { error } = await supabase.rpc('set_student_detail_encrypted', {
-            p_id: studentId,
-            p_plain_detail: plainDetail,
-            p_aes_key: encryptionKey,
+        const { error } = await supabase.rpc('actualizar_descripcion_segura', {
+            p_estudiante_id: studentId,
+            p_nueva_descripcion: plainDetail,
         })
         if (error) throw new Error(`Error al actualizar detalle del estudiante: ${error.message}`)
     }
 
     async getDetail(studentId: number): Promise<string | null> {
         const supabase = getSupabaseClient()
-        const encryptionKey = process.env.SUPABASE_ENCRYPTION_KEY
-        if (!encryptionKey) throw new Error('Falta la variable de entorno SUPABASE_ENCRYPTION_KEY')
 
-        const { data, error } = await supabase.rpc('get_student_detail_decrypted', {
-            p_id: studentId,
-            p_aes_key: encryptionKey,
-        })
+        const { data, error } = await supabase
+            .from('students')
+            .select('detail')
+            .eq('id', studentId)
+            .single()
         if (error) throw new Error(`Error al obtener detalle del estudiante: ${error.message}`)
-        return data as string | null
+        return data?.detail ?? null
     }
 
     async getDni(studentId: number): Promise<string | null> {
