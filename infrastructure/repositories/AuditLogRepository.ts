@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/infraestructure/database/supabaseClient'
+import { getSupabaseClient } from '@/infrastructure/database/supabaseClient'
 
 export interface AuditLogEntry {
     id: number

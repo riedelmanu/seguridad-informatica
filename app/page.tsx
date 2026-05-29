@@ -73,10 +73,10 @@ export default function Home() {
             conversation.map((msg: Message) => (
               <div
                 key={msg.id}
-                className={`flex w-full ${msg.role === UserRole.Teacher ? "justify-end" : "justify-start"}`}
+                className={`flex w-full ${msg.role === UserRole.User ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[85%] sm:max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.role === UserRole.Teacher
+                  className={`max-w-[85%] sm:max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.role === UserRole.User
                       ? "bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900 rounded-br-sm"
                       : "bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200 rounded-bl-sm"
                     }`}

@@ -24,7 +24,11 @@
       "Bash(curl -s \"https://api.clerk.com/v1/users?limit=10\" -H \"Authorization: Bearer sk_test_7EPJ5Uz4XJUSnlvhc5x2bW3FyEZ6bDYDxcad7h0mmv\")",
       "Bash(python -c \"import sys,json; users=json.load\\(sys.stdin\\)['data']; [print\\(u['id'], u['email_addresses'][0]['email_address'], u.get\\('public_metadata',{}\\)\\) for u in users]\")",
       "Bash(python -c \"import sys,json; data=json.load\\(sys.stdin\\); print\\(json.dumps\\(data, indent=2\\)\\)\")",
-      "Bash(python *)"
+      "Bash(python *)",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "Bash(awk '{print $NF}')",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(Rename-Item *)"
     ]
   }
 }

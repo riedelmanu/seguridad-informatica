@@ -1,4 +1,4 @@
-import { StudentRepository } from '@/infraestructure/repositories/StudentRepository'
+import { StudentRepository } from '@/infrastructure/repositories/StudentRepository'
 
 export class GetStudentsListHandler {
     private readonly repository: StudentRepository

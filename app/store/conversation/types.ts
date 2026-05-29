@@ -6,8 +6,8 @@ export type Message = {
 }
 
 export enum UserRole {
-  Admin = 'ai',
-  Teacher = 'teacher',
+  Assistant = 'ai',
+  User = 'teacher',
 }
 
 export interface ConversationStore {

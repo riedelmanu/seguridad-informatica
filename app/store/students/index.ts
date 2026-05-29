@@ -2,9 +2,8 @@ import { create } from 'zustand'
 import { Student, StudentsStore } from './types'
 
 export const useStudentsStore = create<StudentsStore>()(
-  (set, get) => ({
+  (set) => ({
     students: [],
-    
     setStudents: (students: Student[]) => set({ students }),
   }),
 )

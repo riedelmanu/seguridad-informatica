@@ -48,6 +48,21 @@ Debe pasar por el pipeline completo de `AddMessageHandler`: Zod → Guardian →
 
 ---
 
+## Skills / Documentos de Referencia
+
+Antes de escribir código, los agentes deben consultar los documentos relevantes:
+
+| Documento | Cuándo consultar |
+|---|---|
+| `.claude/agents/dev-standards.md` | Al crear archivos, carpetas, imports, enums, nombrar variables |
+| `.claude/agents/security-checklist.md` | Al tocar auth, authz, inputs, variables de entorno, datos sensibles |
+| `.claude/agents/db-patterns.md` | Al crear migraciones, repositories, o usar clientes Supabase |
+| `.claude/agents/security-agent.md` | Al hacer code review de seguridad |
+| `.claude/agents/feature-builder.md` | Al agregar nueva funcionalidad end-to-end |
+| `.claude/agents/academic-explainer.md` | Al documentar o explicar conceptos de seguridad |
+
+---
+
 ## Agentes Disponibles
 
 ### `security-agent` (`.claude/agents/security-agent.md`)
@@ -80,6 +95,27 @@ Especializado en:
 - Relacionar implementaciones con conceptos teóricos (OWASP, OAuth 2.0, OIDC, etc.)
 - Generar explicaciones paso a paso del flujo de datos
 - Identificar qué pregunta académica responde cada decisión de diseño
+
+---
+
+### `dev-standards` (`.claude/agents/dev-standards.md`)
+**Cuándo usarlo:** Al crear archivos nuevos, carpetas, definir tipos o enums, nombrar funciones/clases, organizar imports.
+
+Especializado en:
+- Convenciones de nomenclatura (carpetas, archivos, handlers, repositories, enums)
+- Estructura de directorios y jerarquía de archivos
+- Patrones de código TypeScript (API Routes, Handlers, Repositories)
+- Gestión de variables de entorno
+
+---
+
+### `security-checklist` (`.claude/agents/security-checklist.md`)
+**Cuándo usarlo:** Como checklist de revisión antes de cualquier PR, o al crear código que toca autenticación, autorización, inputs o datos sensibles.
+
+---
+
+### `db-patterns` (`.claude/agents/db-patterns.md`)
+**Cuándo usarlo:** Al crear tablas, migraciones, repositories, o al decidir qué cliente Supabase usar.
 
 ---
 

@@ -111,3 +111,183 @@ Adicionalmente, implementamos medidas de seguridad:
 - Análisis Estático (SAST) con CodeQL: Se integró mediante GitHub Actions para escanear automáticamente cada Pull Request en busca de vulnerabilidades estructurales.
 - Branch Protection: Se bloqueó el Push directo a main. Todo código requiere un PR, aprobación de dos integrantes y superar el análisis de CodeQL.
 - Security Policy: Se añadió un SECURITY.md definiendo versiones soportadas y protocolos de reporte de vulnerabilidades.
+
+---
+
+## Fase 4: Persistencia Segura, Criptografía en Reposo y Auditoría
+
+En esta fase culminante se reemplazó por completo el almacenamiento efímero en memoria por una base de datos relacional PostgreSQL alojada en Supabase, incorporando tres pilares de seguridad de nivel productivo: **prevención de SQL Injection**, **criptografía simétrica en reposo** y un **sistema de auditoría dual** equivalente a pgAudit.
+
+---
+
+### 4.1 Integración con Supabase y Patrón Singleton
+
+El primer desafío en entornos Serverless (Next.js desplegado en Vercel) es la gestión eficiente de conexiones: cada invocación de una ruta API puede crear una instancia nueva del cliente, agotando el pool de conexiones de PostgreSQL bajo carga.
+
+**Solución — Patrón Singleton:**
+Se configuró el cliente de Supabase como una única instancia compartida por todo el proceso. Al ejecutarse estrictamente del lado del servidor, la clave privilegiada `SUPABASE_SERVICE_ROLE_KEY` nunca viaja al cliente; las validaciones PBAC actúan como barrera antes de que el handler toque la base de datos.
+
+```
+📁 infrastructure/database/supabaseClient.ts     ← Singleton con service role key (RLS bypass por la clave, no por el patrón)
+📁 infrastructure/database/supabaseAnonClient.ts ← Cliente anon con JWT del usuario (respeta RLS)
+📁 infrastructure/repositories/StudentRepository.ts
+📁 infrastructure/repositories/AuditLogRepository.ts
+```
+
+**Control de versiones con migraciones:**
+La evolución del esquema (tabla `students`, triggers para `updated_at`, tabla `app_audit_log`) se gestionó mediante archivos SQL secuenciales en `supabase/migrations/`. Esto garantiza reproducibilidad y elimina modificaciones manuales no documentadas en producción.
+
+---
+
+### 4.2 Prevención de SQL Injection — Defensa en Profundidad
+
+Un atacante que controle el parámetro `id` de la ruta `/api/students/:id/dni` podría intentar inyectar SQL para exfiltrar toda la tabla. La defensa opera en **dos capas independientes**:
+
+**Capa 1 — WAF en el borde (Vercel Firewall):**
+Antes de que la petición llegue siquiera a Next.js, una regla de firewall valida el formato del parámetro mediante expresión regular (`^\d{7,8}$`). Cualquier carácter anómalo (`'`, `--`, `OR`, `1=1`) recibe un `HTTP 403` en el borde de red.
+
+**Capa 2 — Prepared Statements en la aplicación:**
+El query builder nativo de Supabase parametriza automáticamente todas las consultas enviadas a PostgreSQL. El código SQL ejecutable nunca se mezcla con los datos de entrada, neutralizando la posibilidad de que una cadena maliciosa altere la semántica de la consulta.
+
+```
+📁 infrastructure/repositories/StudentRepository.ts   ← Consultas parametrizadas via Supabase SDK
+📁 app/api/students/[id]/dni/route.ts                 ← Validación de formato antes del handler
+```
+
+> La clave del concepto: aunque un atacante evada el WAF, los Prepared Statements en la capa de aplicación constituyen una segunda línea de defensa independiente.
+
+#### Cómo probarlo — Guía paso a paso
+
+##### Cómo obtener tu token de sesión (solo necesario si querés probar con usuario autenticado)
+
+1. Abrí la app en el navegador y **iniciá sesión** con tu cuenta de Google
+2. Abrí las **DevTools** (`F12`)
+3. Andá a la pestaña **Application** → **Cookies** → seleccioná el dominio (`localhost:3000` o `seguridad-informatica-black.vercel.app`)
+4. Buscá la cookie llamada `__session` y **copiá su valor**
+
+Ese valor es el JWT de Clerk. Usalo así en los comandos:
+
+> **Importante — sintaxis en PowerShell:** `curl` en PowerShell es un alias de `Invoke-WebRequest` y no acepta `-H`. Usá `curl.exe` (el curl real de Windows) con `--header`:
+
+```powershell
+curl.exe "http://localhost:3000/api/students/1/dni" --header "Cookie: __session=PEGAR_VALOR_AQUI"
+```
+
+> Sin el token obtenés **401**. Con el token pero sin el permiso `read:student_dni` en tu usuario de Clerk obtenés **403**. Con token y permiso obtenés **200** con el DNI descifrado.
+
+---
+
+Las pruebas se dividen en dos entornos porque cada uno demuestra una capa distinta:
+
+| Entorno | Qué demuestra | Cómo correrlo |
+|---|---|---|
+| **Producción** (Vercel) | WAF bloqueando en el borde (Capa 1) | `curl` sin token, sin login |
+| **Local** (`localhost:3000`) | `parseInt` + Prepared Statements (Capa 2) | `npm run dev`, luego `curl` sin token |
+
+---
+
+##### Pruebas en Producción — WAF (Capa 1)
+
+No necesitás login. El WAF actúa antes de que la petición llegue a Next.js.
+
+**Prueba A — Payload clásico `OR 1=1`**
+```powershell
+curl "https://seguridad-informatica-black.vercel.app/api/students/1%20OR%201%3D1/dni"
+```
+Resultado real: **`403 Forbidden`** — el WAF detectó el patrón `OR 1=1` y bloqueó en el borde.
+
+**Prueba B — DROP TABLE**
+```powershell
+curl "https://seguridad-informatica-black.vercel.app/api/students/1%3BDROP%20TABLE%20students--/dni"
+```
+Resultado real: **`403 Forbidden`** — el WAF detectó el `;` y `DROP TABLE`.
+
+**Prueba C — Request legítima desde curl (sin origen de browser)**
+```powershell
+curl "https://seguridad-informatica-black.vercel.app/api/students/1/dni"
+```
+Resultado real: **`403 Forbidden`** — la regla "Restrict API to Frontend" bloquea cualquier request que no provenga del navegador (sin headers `Origin`/`Referer` del dominio). Esto demuestra que el WAF tiene múltiples reglas activas simultáneamente.
+
+---
+
+##### Pruebas en Local — Capa de Aplicación (Capa 2)
+
+Primero levantá el servidor:
+```powershell
+npm run dev
+```
+
+En local no hay WAF, por lo que los payloads llegan directamente a la aplicación. No hace falta token para ver cómo responde la ruta.
+
+**Prueba D — `OR 1=1` (texto puro, sin número al inicio)**
+```powershell
+curl "http://localhost:3000/api/students/'%20OR%201%3D1/dni"
+```
+Resultado real: **`401 Unauthorized`** — `parseInt("' OR 1=1")` devuelve `NaN`, la ruta devuelve 400... pero antes de eso, la capa de autenticación Clerk devuelve 401 porque no hay sesión. El payload nunca toca la BD.
+
+**Prueba E — DROP TABLE (el caso más didáctico)**
+```powershell
+curl "http://localhost:3000/api/students/1%3BDROP%20TABLE%20students--/dni"
+```
+Resultado real: **`401 Unauthorized`**
+
+Acá está el punto clave: `parseInt("1;DROP TABLE students--")` devuelve **`1`** — el número es válido y pasa la validación de formato. Sin embargo:
+1. Clerk devuelve 401 (sin sesión) → el DROP nunca llega a Supabase
+2. Si hubiera sesión, el SDK parametrizaría la query: el `;DROP...` se trataría como **dato**, no como SQL ejecutable
+
+Esto prueba por qué `parseInt` solo **no es suficiente**: un atacante autenticado con esa URL llegaría a Supabase, y son los Prepared Statements los que neutralizan el ataque en última instancia.
+
+> **Conclusión de las pruebas:** en producción el WAF es tan agresivo que la Capa 2 raramente se ejerce. Pero si el WAF falla o se bypasea, los Prepared Statements son la red de seguridad real. Eso es Defensa en Profundidad.
+
+---
+
+### 4.3 Criptografía en Reposo con PGCRYPTO
+
+Los DNIs son **Información de Identificación Personal (PII)**. Almacenarlos en texto plano significa que cualquier acceso no autorizado a la base de datos (backup filtrado, credenciales comprometidas) expone todos los datos de forma inmediata.
+
+**Solución — Cifrado simétrico PGP directamente en PostgreSQL:**
+
+Se activó la extensión oficial `pgcrypto` en Supabase y se diseñaron funciones `SECURITY DEFINER` que encapsulan las operaciones de cifrado/descifrado. En lugar de permitir escrituras o lecturas directas sobre las columnas cifradas, toda interacción pasa por estas funciones:
+
+- **Al insertar:** la función recibe el DNI en texto plano y la clave AES-256 (proveniente de `SUPABASE_ENCRYPTION_KEY` en el servidor), almacenando únicamente el texto cifrado en disco.
+- **Al leer:** la función ejecuta la operación inversa; el DNI legible **nunca se escribe en disco de forma permanente**, existiendo únicamente en memoria volátil del servidor durante la transmisión de la consulta.
+
+```
+📁 supabase/migrations/   ← Activación de pgcrypto + funciones SECURITY DEFINER de encrypt/decrypt
+📁 infrastructure/repositories/StudentRepository.ts   ← Llama a las funciones, inyecta la clave en runtime
+📁 app/api/students/[id]/dni/route.ts                 ← Endpoint que expone el DNI descifrado bajo PBAC
+```
+
+> El dato sensible **nunca toca el disco en texto plano**. La clave criptográfica se inyecta en el momento exacto de la transacción y vive solo en la variable de entorno del servidor.
+
+---
+
+### 4.4 Auditoría y Trazabilidad — Sistema Dual (Equivalente a pgAudit)
+
+El cifrado protege el dato en reposo, pero no responde una pregunta crítica: **¿quién accedió, cuándo y desde dónde?** Sin trazabilidad, un actor interno con acceso legítimo podría exfiltrar DNIs masivamente sin dejar rastro.
+
+Se implementó un sistema de auditoría en **dos niveles complementarios**:
+
+#### Nivel 1 — Trigger de base de datos (mutaciones: INSERT / UPDATE / DELETE)
+
+Un trigger PostgreSQL intercepta cualquier cambio en las tablas de la aplicación y registra automáticamente el evento en un log estructurado. El desafío en entornos con conexión compartida de API es identificar **quién** hizo el cambio; se resuelve inspeccionando el JWT de sesión activo en Supabase Auth para extraer el `user_id` real.
+
+```
+📁 supabase/migrations/   ← Definición del trigger + función de auditoría de mutaciones
+```
+
+#### Nivel 2 — Audit log de aplicación (lecturas de PII)
+
+Los triggers tradicionales son **ciegos ante SELECT**: un atacante con acceso legítimo podría hacer scraping masivo de DNIs sin alterar ningún registro. Para cerrar este vector, cada vez que el endpoint descifra un DNI bajo demanda, el handler registra la operación en `app_audit_log` **de forma no bloqueante**: si el log falla, la respuesta al usuario no se interrumpe.
+
+```
+📁 infrastructure/repositories/AuditLogRepository.ts       ← Escritura en app_audit_log
+📁 application/query/GetAuditLogHandler.ts                 ← Lectura del log (Clean Architecture)
+📁 app/api/students/[id]/dni/route.ts                      ← Dispara el log tras descifrar el DNI
+📁 app/api/audit/route.ts                                  ← GET /api/audit (requiere read:audit_logs)
+📁 app/audit/page.tsx                                      ← UI de auditoría, solo admins
+```
+
+**Campos registrados por evento:** `user_id`, `user_email`, `action`, `resource`, `ip_address`, `user_agent`, `metadata`.
+
+> La combinación de ambos niveles garantiza cobertura total: el trigger captura toda mutación de datos aunque bypasee la aplicación; el log de aplicación captura toda lectura de PII aunque no modifique ningún registro.

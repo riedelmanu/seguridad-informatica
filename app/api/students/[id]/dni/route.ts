@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { checkServerPermission } from '@/app/lib/auth'
-import { StudentRepository } from '@/infraestructure/repositories/StudentRepository'
-import { AuditLogRepository } from '@/infraestructure/repositories/AuditLogRepository'
+import { StudentRepository } from '@/infrastructure/repositories/StudentRepository'
+import { AuditLogRepository } from '@/infrastructure/repositories/AuditLogRepository'
 
 export const GET = async (
     request: NextRequest,

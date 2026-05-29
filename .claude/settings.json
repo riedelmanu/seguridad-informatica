@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk 'NR<=20 || !seen[$0]++' \"c:\\\\Users\\\\Chakichan\\\\OneDrive\\\\Escritorio\\\\UNIVERSIDAD\\\\SEGURIDAD\\\\seguridad-informatica\\\\package.json\")",
+      "Bash(echo \"deleted .next: $?\")",
+      "Bash(grep -q \"Ready\" \"C:\\\\Users\\\\CHAKIC~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Chakichan-OneDrive-Escritorio-UNIVERSIDAD-SEGURIDAD-seguridad-informatica\\\\fcf7cde2-7273-4599-bd96-e07df86281ea\\\\tasks\\\\bcwvjulqf.output\")",
+      "Bash(break)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(taskkill /PID 92000 /F)",
+      "PowerShell(Stop-Process -Id 92000 -Force -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 500; $p = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue; if \\($p\\) { \"Puerto 3000 OCUPADO por PID $\\($p.OwningProcess\\)\" } else { \"Puerto 3000 LIBRE\" })",
+      "PowerShell($p = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue; if \\($p\\) { Stop-Process -Id $p.OwningProcess -Force }; Remove-Item -Recurse -Force \".next\" -ErrorAction SilentlyContinue; if \\(Test-Path \".next\"\\) { \".next AUN EXISTE\" } else { \".next borrado OK\" })"
+    ]
+  }
+}

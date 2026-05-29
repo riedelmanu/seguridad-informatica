@@ -84,7 +84,7 @@ function DniDisplay({ value, countdown }: { value: string | null; countdown: num
         <span className="font-mono font-bold tracking-widest" style={{
           color: isUrgent ? "#ef4444" : "#eab308",
           textShadow: isUrgent
-            ? "0 0 8px #ef4444, 0 0 16px #ef444488, 2px 0 0 #00ffff, -2px 0 0 #ff00ff"
+            ? "0 0 8px #ef4444, 0 0 16px #ef444488, 1px 0 0 rgba(0,255,255,0.35), -1px 0 0 rgba(255,0,255,0.35)"
             : "0 0 6px #eab308, 0 0 12px #eab30888",
           letterSpacing: "0.25em",
         }}>

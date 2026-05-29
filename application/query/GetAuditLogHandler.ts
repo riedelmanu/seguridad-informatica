@@ -1,4 +1,4 @@
-import { AuditLogRepository, AuditLogEntry } from '@/infraestructure/repositories/AuditLogRepository'
+import { AuditLogRepository, AuditLogEntry } from '@/infrastructure/repositories/AuditLogRepository'
 
 export interface GetAuditLogQuery {
     limit?: number

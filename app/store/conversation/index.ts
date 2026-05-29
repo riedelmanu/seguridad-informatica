@@ -7,8 +7,8 @@ export const useConversationStore = create<ConversationStore>()(
     (set, get) => ({
       conversation: [],
 
-      addTeacherMessage: (message: string) => set({ conversation: [...get().conversation, { id:crypto.randomUUID(), text: message, role: UserRole.Teacher }] }),
-      addAiAgentMessage: (message: string) => set({ conversation: [...get().conversation, { id:crypto.randomUUID(), text: message, role: UserRole.Admin }] }),
+      addTeacherMessage: (message: string) => set({ conversation: [...get().conversation, { id:crypto.randomUUID(), text: message, role: UserRole.User }] }),
+      addAiAgentMessage: (message: string) => set({ conversation: [...get().conversation, { id:crypto.randomUUID(), text: message, role: UserRole.Assistant }] }),
       clearConversation: () => set({ conversation: [] }),
       
     }),
