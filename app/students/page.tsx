@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useEffect, useRef, useState, useCallback, FormEvent } from "react"
 import { useStudents } from "@/app/hooks/useStudents"
 import { useStudentsStore, Student } from "@/app/store/students"
 import { useUser } from "@clerk/nextjs"
 import { AuthPrompt } from "@/app/components/AuthPrompt"
 import { usePermissions } from "@/app/hooks/usePermissions"
+import { useStudentApi } from "@/app/lib/clients/useStudentApi"
 
 const DNI_VISIBLE_SECONDS = 5
 
@@ -109,13 +110,17 @@ function DniDisplay({ value, countdown }: { value: string | null; countdown: num
 export default function StudentsPage() {
   const { user, isLoaded: isUserLoaded } = useUser()
   const { fetchStudents } = useStudents()
-  const { students } = useStudentsStore()
+  const { students, setStudents } = useStudentsStore()
   const [isLoading, setIsLoading] = useState(true)
   const { hasPermission, isLoaded: permissionsLoaded } = usePermissions()
   const [revealedDnis, setRevealedDnis] = useState<Record<number, string | null>>({})
   const [loadingDni, setLoadingDni] = useState<Record<number, boolean>>({})
   const [dniCountdowns, setDniCountdowns] = useState<Record<number, number>>({})
   const timersRef = useRef<Record<number, ReturnType<typeof setInterval>>>({})
+
+  const { searchStudents, getStudentsList } = useStudentApi()
+  const [searchTerm, setSearchTerm] = useState("")
+  const [isSearching, setIsSearching] = useState(false)
 
   const hideDni = useCallback((studentId: number) => {
     clearInterval(timersRef.current[studentId])
@@ -135,6 +140,39 @@ export default function StudentsPage() {
     }
     loadStudents()
   }, [user, isUserLoaded, permissionsLoaded, hasPermission, fetchStudents])
+
+  useEffect(() => {
+    if (searchTerm === "") {
+      const loadAll = async () => {
+        if (!user || !hasPermission("read:students")) return
+        try {
+          const res = await getStudentsList()
+          setStudents(res.list)
+        } catch (err) {
+          console.error("Error loading students list:", err)
+        }
+      }
+      loadAll()
+    }
+  }, [searchTerm, getStudentsList, setStudents, user, hasPermission])
+
+  const handleSearch = async (e?: FormEvent) => {
+    if (e) e.preventDefault()
+    setIsSearching(true)
+    try {
+      if (searchTerm.trim() === "") {
+        const res = await getStudentsList()
+        setStudents(res.list)
+      } else {
+        const res = await searchStudents(searchTerm.trim())
+        setStudents(res.list)
+      }
+    } catch (error) {
+      console.error("Error searching students:", error)
+    } finally {
+      setIsSearching(false)
+    }
+  }
 
   useEffect(() => {
     const timers = timersRef.current
@@ -200,9 +238,43 @@ export default function StudentsPage() {
       `}</style>
       <main className="flex flex-col flex-1 items-center bg-zinc-50 font-sans dark:bg-zinc-950 h-full w-full overflow-hidden">
         <div className="flex flex-col w-full max-w-4xl flex-1 bg-white dark:bg-zinc-900/50 shadow-sm border-x border-zinc-200 dark:border-zinc-800 overflow-hidden">
-          <div className="p-6 border-b border-zinc-200 dark:border-zinc-800">
-            <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Listado de Estudiantes</h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Esta es la lista de estudiantes actualmente en el sistema.</p>
+          <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Listado de Estudiantes</h2>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Esta es la lista de estudiantes actualmente en el sistema.</p>
+            </div>
+            <form onSubmit={handleSearch} className="flex items-center gap-2 w-full md:max-w-sm">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar por nombre o email..."
+                  className="w-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-lg pl-9 pr-4 py-2 text-sm border border-transparent focus:border-zinc-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none transition-all"
+                  disabled={isSearching}
+                />
+                <svg
+                  className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+              <button
+                type="submit"
+                disabled={isSearching}
+                className="px-4 py-2 text-sm font-medium text-white bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all disabled:opacity-50"
+              >
+                {isSearching ? "..." : "Buscar"}
+              </button>
+            </form>
           </div>
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (

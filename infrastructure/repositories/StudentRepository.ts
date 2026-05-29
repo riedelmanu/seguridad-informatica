@@ -24,6 +24,15 @@ export class StudentRepository {
         return (data as StudentRow[]).map(r => ({ ...r, detail: null }))
     }
 
+    async searchSecure(criterio: string): Promise<StudentRow[]> {
+        const supabase = getSupabaseClient()
+        const { data, error } = await supabase.rpc('buscar_estudiantes_segura', {
+            p_criterio: criterio,
+        })
+        if (error) throw new Error(`Error al buscar estudiantes: ${error.message}`)
+        return (data as StudentRow[]).map(r => ({ ...r, detail: null }))
+    }
+
     async updateDetail(studentId: number, plainDetail: string): Promise<void> {
         const supabase = getSupabaseClient()
         const encryptionKey = process.env.SUPABASE_ENCRYPTION_KEY
