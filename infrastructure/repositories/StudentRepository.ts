@@ -33,6 +33,39 @@ export class StudentRepository {
         return (data as StudentRow[]).map(r => ({ ...r, detail: null }))
     }
 
+    async create(input: { name: string; email: string; dni?: string | null }): Promise<StudentRow> {
+        const supabase = getSupabaseClient()
+
+        const { data, error } = await supabase
+            .from('students')
+            .insert({ name: input.name, email: input.email, active: true })
+            .select('id, name, email, active')
+            .single()
+
+        if (error) {
+            // 23505 = unique_violation (email duplicado)
+            if (error.code === '23505') throw new Error('DUPLICATE_EMAIL')
+            throw new Error(`Error al crear estudiante: ${error.message}`)
+        }
+
+        const row = data as StudentRow
+
+        // El DNI es PII: se cifra server-side con AES-256 vía RPC, nunca se guarda en claro.
+        if (input.dni) {
+            const encryptionKey = process.env.SUPABASE_ENCRYPTION_KEY
+            if (!encryptionKey) throw new Error('Falta la variable de entorno SUPABASE_ENCRYPTION_KEY')
+
+            const { error: dniError } = await supabase.rpc('set_student_dni_encrypted', {
+                p_id: row.id,
+                p_plain_dni: input.dni,
+                p_aes_key: encryptionKey,
+            })
+            if (dniError) throw new Error(`Error al cifrar DNI del estudiante: ${dniError.message}`)
+        }
+
+        return { ...row, detail: null }
+    }
+
     async updateDetail(studentId: number, plainDetail: string): Promise<void> {
         const supabase = getSupabaseClient()
 

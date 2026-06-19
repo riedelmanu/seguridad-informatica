@@ -30,16 +30,17 @@ export function Header() {
   return (
     <header className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md shrink-0 z-20 w-full">
       <div className="flex items-center gap-4">
-        <h1 className="text-sm font-semibold tracking-wide text-zinc-800 dark:text-zinc-200 uppercase">
-          Secure Campus IA
-        </h1>
-        {user && (
-          <nav className="flex items-center gap-2">
-            <NavLink href="/">Chat</NavLink>
-            {hasPermission("read:students") && <NavLink href="/students">Estudiantes</NavLink>}
-            {hasPermission("read:audit_logs") && <NavLink href="/audit">Audit Log</NavLink>}
-          </nav>
-        )}
+        <Link href="/" className="rounded-md transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
+          <h1 className="text-sm font-semibold tracking-wide text-zinc-800 dark:text-zinc-200 uppercase">
+            Secure Campus IA
+          </h1>
+        </Link>
+        <nav className="flex items-center gap-2">
+          {user && <NavLink href="/">Chat</NavLink>}
+          {user && hasPermission("read:students") && <NavLink href="/students">Estudiantes</NavLink>}
+          {user && hasPermission("read:audit_logs") && <NavLink href="/audit">Audit Log</NavLink>}
+          <NavLink href="/about">About Us</NavLink>
+        </nav>
       </div>
       <div className="flex items-center gap-3">
         {user ? (

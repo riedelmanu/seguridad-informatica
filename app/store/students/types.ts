@@ -9,4 +9,5 @@ export interface Student {
 export interface StudentsStore {
   students: Student[]
   setStudents: (students: Student[]) => void
+  addStudent: (student: Student) => void
 }

@@ -5,6 +5,7 @@ export const useStudentsStore = create<StudentsStore>()(
   (set) => ({
     students: [],
     setStudents: (students: Student[]) => set({ students }),
+    addStudent: (student: Student) => set((state) => ({ students: [student, ...state.students] })),
   }),
 )
 
