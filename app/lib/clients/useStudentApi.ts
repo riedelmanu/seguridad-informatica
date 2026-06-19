@@ -4,9 +4,11 @@ import { useCallback } from 'react'
 import { api } from '@/app/lib/api'
 import { GetStudentsListResponse } from '@/application/query/GetStudentsListHandler'
 import { GetStudentsSearchResponse } from '@/application/query/GetStudentsSearchHandler'
+import { CreateStudentCommand, CreateStudentResponse } from '@/application/command/CreateStudentHandler'
 
 const BASE_URL = '/api/students/list'
 const SEARCH_URL = '/api/students/search'
+const STUDENTS_URL = '/api/students'
 
 export const useStudentApi = () => {
     const getStudentsList = useCallback(async (): Promise<GetStudentsListResponse> => {
@@ -25,10 +27,15 @@ export const useStudentApi = () => {
         return api.patch<{ success: boolean }>(`/api/students/${studentId}/detail`, { detail })
     }, [])
 
+    const createStudent = useCallback(async (input: CreateStudentCommand): Promise<CreateStudentResponse> => {
+        return api.post<CreateStudentResponse>(STUDENTS_URL, { ...input })
+    }, [])
+
     return {
         getStudentsList,
         searchStudents,
         getStudentDetail,
-        updateStudentDetail
+        updateStudentDetail,
+        createStudent
     }
 }

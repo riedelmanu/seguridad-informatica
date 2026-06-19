@@ -110,7 +110,7 @@ function DniDisplay({ value, countdown }: { value: string | null; countdown: num
 export default function StudentsPage() {
   const { user, isLoaded: isUserLoaded } = useUser()
   const { fetchStudents } = useStudents()
-  const { students, setStudents } = useStudentsStore()
+  const { students, setStudents, addStudent } = useStudentsStore()
   const [isLoading, setIsLoading] = useState(true)
   const { hasPermission, isLoaded: permissionsLoaded } = usePermissions()
   const [revealedDnis, setRevealedDnis] = useState<Record<number, string | null>>({})
@@ -124,9 +124,44 @@ export default function StudentsPage() {
   const [editDetailValue, setEditDetailValue] = useState<string>("")
   const [isSavingDetail, setIsSavingDetail] = useState<boolean>(false)
 
-  const { searchStudents, getStudentsList, getStudentDetail, updateStudentDetail } = useStudentApi()
+  const { searchStudents, getStudentsList, getStudentDetail, updateStudentDetail, createStudent } = useStudentApi()
   const [searchTerm, setSearchTerm] = useState("")
   const [isSearching, setIsSearching] = useState(false)
+
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [newName, setNewName] = useState("")
+  const [newEmail, setNewEmail] = useState("")
+  const [newDni, setNewDni] = useState("")
+  const [isCreating, setIsCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
+
+  const resetCreateForm = () => {
+    setNewName("")
+    setNewEmail("")
+    setNewDni("")
+    setCreateError(null)
+  }
+
+  const handleCreateStudent = async (e: FormEvent) => {
+    e.preventDefault()
+    setCreateError(null)
+    setIsCreating(true)
+    try {
+      const res = await createStudent({
+        name: newName,
+        email: newEmail,
+        dni: newDni.trim() === "" ? undefined : newDni.trim(),
+      })
+      addStudent(res.student)
+      setShowCreateModal(false)
+      resetCreateForm()
+    } catch (err: any) {
+      const msg = err?.data?.error || err?.message || "No se pudo crear el estudiante."
+      setCreateError(msg)
+    } finally {
+      setIsCreating(false)
+    }
+  }
 
   const handleRevealDetail = async (studentId: number) => {
     if (revealedDetails[studentId] !== undefined) {
@@ -259,6 +294,7 @@ export default function StudentsPage() {
     )
   }
 
+  const canCreate = hasPermission("create:students")
   const canSeeDni = hasPermission("read:student_dni")
   const canSeeDetail = hasPermission("read:student_detail") || hasPermission("read:students")
   const canEditDetail = hasPermission("write:student_detail") || hasPermission("read:student_dni")
@@ -285,6 +321,19 @@ export default function StudentsPage() {
               <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Listado de Estudiantes</h2>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Esta es la lista de estudiantes actualmente en el sistema.</p>
             </div>
+            <div className="flex items-center gap-2 w-full md:w-auto">
+            {canCreate && (
+              <button
+                type="button"
+                onClick={() => { resetCreateForm(); setShowCreateModal(true) }}
+                className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-all"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Dar de alta
+              </button>
+            )}
             <form onSubmit={handleSearch} className="flex items-center gap-2 w-full md:max-w-sm">
               <div className="relative flex-1">
                 <input
@@ -317,6 +366,7 @@ export default function StudentsPage() {
                 {isSearching ? "..." : "Buscar"}
               </button>
             </form>
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
@@ -469,6 +519,96 @@ export default function StudentsPage() {
           </div>
         </div>
       </main>
+
+      {canCreate && showCreateModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => { if (!isCreating) { setShowCreateModal(false); resetCreateForm() } }}
+        >
+          <div
+            className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-zinc-200 dark:border-zinc-800 p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Dar de alta estudiante</h3>
+              <button
+                onClick={() => { if (!isCreating) { setShowCreateModal(false); resetCreateForm() } }}
+                className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+                aria-label="Cerrar"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateStudent} className="flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1">Nombre</label>
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  required
+                  maxLength={255}
+                  placeholder="Nombre y apellido"
+                  className="w-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-lg px-3 py-2 text-sm border border-transparent focus:border-zinc-300 dark:focus:border-zinc-700 focus:outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  required
+                  maxLength={255}
+                  placeholder="estudiante@example.com"
+                  className="w-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-lg px-3 py-2 text-sm border border-transparent focus:border-zinc-300 dark:focus:border-zinc-700 focus:outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+                  DNI <span className="font-normal text-zinc-400">(opcional, se almacena cifrado)</span>
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={newDni}
+                  onChange={(e) => setNewDni(e.target.value)}
+                  maxLength={8}
+                  placeholder="Ej: 43521876"
+                  className="w-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-lg px-3 py-2 text-sm border border-transparent focus:border-zinc-300 dark:focus:border-zinc-700 focus:outline-none transition-all font-mono"
+                />
+              </div>
+
+              {createError && (
+                <p className="text-sm text-red-600 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-lg px-3 py-2">
+                  {createError}
+                </p>
+              )}
+
+              <div className="flex gap-2 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowCreateModal(false); resetCreateForm() }}
+                  disabled={isCreating}
+                  className="px-4 py-2 text-sm font-medium rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreating}
+                  className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-all disabled:opacity-50"
+                >
+                  {isCreating ? "Creando..." : "Crear estudiante"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   )
 }
